@@ -1,6 +1,6 @@
 @import com.javarush.shakhurov.dto.BasePage
-@import gg.jte.Content
 @import com.javarush.shakhurov.utils.NamedRoutes
+@import gg.jte.Content
 @param Content content
 
 <!doctype html>

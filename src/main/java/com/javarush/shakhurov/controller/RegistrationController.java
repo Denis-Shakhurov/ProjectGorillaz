@@ -5,11 +5,11 @@ import io.javalin.http.Context;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
-public class RegistrationController {
+public class RegistrationController extends BaseController {
 
-    public static void index(Context ctx) {
+    public void index(Context ctx) {
         var page = new BasePage();
-        page.setFlash(ctx.consumeSessionAttribute("flash"));
-        ctx.render("users/registration.jte", model("page", page));
+        page.setFlash(ctx.consumeSessionAttribute(FLASH));
+        ctx.render("users/registration.jte", model(PAGE, page));
     }
 }

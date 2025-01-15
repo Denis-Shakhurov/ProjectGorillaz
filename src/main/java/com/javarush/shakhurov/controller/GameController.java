@@ -3,7 +3,6 @@ package com.javarush.shakhurov.controller;
 import com.javarush.shakhurov.dto.GamePage;
 import com.javarush.shakhurov.model.FactoryGame;
 import com.javarush.shakhurov.model.game.Game;
-import com.javarush.shakhurov.service.GameService;
 import com.javarush.shakhurov.utils.NamedRoutes;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
@@ -14,25 +13,24 @@ import java.util.Objects;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
-public class GameController {
+public class GameController extends BaseController {
     private static final ArrayDeque<String> answers = new ArrayDeque<>();
     private static int count = 0;
 
-    public static void create(Context ctx) {
+    public void create(Context ctx) {
         FactoryGame factoryGame = new FactoryGame();
         String nameGame = ctx.formParam("game");
-        //var userId = ctx.pathParamAsClass("id", Long.class).getOrDefault(null);
-        var userId = Long.parseLong(Objects.requireNonNull(ctx.cookie("userId")));
+        var userId = Long.parseLong(Objects.requireNonNull(ctx.cookie(USER_ID)));
         Game game = factoryGame.getGame(nameGame);
         game.setUserId(userId);
-        var gameId = GameService.create(game);
+        var gameId = gameService.create(game);
         ctx.status(HttpStatus.CREATED);
         ctx.redirect(NamedRoutes.gamePath(gameId));
     }
 
-    public static void show(Context ctx) {
-        var id = Long.parseLong(ctx.pathParam("id"));
-        var game = GameService.findById(id)
+    public void show(Context ctx) {
+        var id = Long.parseLong(ctx.pathParam(ID));
+        var game = gameService.findById(id)
                 .orElseThrow(() -> new NotFoundResponse("Game with id = " + id + " not found"));
 
         var page = new GamePage(game);
@@ -55,7 +53,7 @@ public class GameController {
             var answer = answers.poll();
             var currentAnswer = answers.poll();
             if (currentAnswer.equals(answer)) {
-                ctx.sessionAttribute("flash", "Верно!");
+                ctx.sessionAttribute(FLASH, "Верно!");
                 count++;
             } else {
                 page.setStatusAnswer("Fail!");
@@ -68,15 +66,15 @@ public class GameController {
             game.setCountWin(1);
         }
 
-        GameService.update(game);
-        page.setFlash(ctx.consumeSessionAttribute("flash"));
+        gameService.update(game);
+        page.setFlash(ctx.consumeSessionAttribute(FLASH));
         ctx.status(HttpStatus.OK);
-        ctx.render("games/show.jte", model("page", page));
+        ctx.render("games/show.jte", model(PAGE, page));
     }
 
-    public static void destroy(Context ctx) {
-        var userId = Long.parseLong(ctx.pathParam("id"));
-        GameService.destroy(userId);
+    public void destroy(Context ctx) {
+        var userId = Long.parseLong(ctx.pathParam(ID));
+        gameService.destroy(userId);
         ctx.status(HttpStatus.OK);
         ctx.redirect(NamedRoutes.userPath(userId));
     }

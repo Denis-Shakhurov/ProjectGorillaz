@@ -5,17 +5,21 @@ import com.javarush.shakhurov.model.game.EvenGame;
 import com.javarush.shakhurov.model.game.Game;
 import com.javarush.shakhurov.model.game.ProgressionGame;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class FactoryGame {
 
     public Game getGame(String nameGame) {
-        switch (nameGame) {
-            case "CalcGame" : return new CalcGame();
-            case "Калькулятор" : return new CalcGame();
-            case "EvenGame" : return new EvenGame();
-            case "Чётное/нечётное" : return new EvenGame();
-            case "ProgressionGame" : return new ProgressionGame();
-            case "Прогрессия" : return new ProgressionGame();
-            default : throw new IllegalStateException("Unexpected value: " + nameGame);
-        }
+        Map<String, Game> map = new HashMap<>();
+
+        map.put("CalcGame", new CalcGame());
+        map.put("Калькулятор", new CalcGame());
+        map.put("EvenGame", new EvenGame());
+        map.put("Чётное/нечётное", new EvenGame());
+        map.put("ProgressionGame", new ProgressionGame());
+        map.put("Прогрессия", new ProgressionGame());
+
+        return map.getOrDefault(nameGame, null);
     }
 }

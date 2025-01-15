@@ -9,50 +9,51 @@ import java.util.Map;
 import java.util.Optional;
 
 public class GameService {
+    private final GameRepository gameRepository = new GameRepository();
 
-    public static Long create(Game game) {
+    public Long create(Game game) {
         try {
-            return GameRepository.save(game);
+            return gameRepository.save(game);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Optional<Game> findById(Long id) {
+    public Optional<Game> findById(Long id) {
         try {
-            return GameRepository.findById(id);
+            return gameRepository.findById(id);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static List<Game> getAllGameForUser(Long userId) {
+    public List<Game> getAllGameForUser(Long userId) {
         try {
-            return GameRepository.getAllGameForUser(userId);
+            return gameRepository.getAllGameForUser(userId);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static List<Map<String, Game>> getAllUserNameWithGames() {
+    public List<Map<String, Game>> getAllUserNameWithGames() {
         try {
-            return GameRepository.getAllUserNameWithGames();
+            return gameRepository.getAllUserNameWithGames();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void update(Game game) {
+    public void update(Game game) {
         try {
-            GameRepository.update(game);
+            gameRepository.update(game);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void destroy(Long userId) {
+    public void destroy(Long userId) {
         try {
-            GameRepository.deleteAllGameForUser(userId);
+            gameRepository.deleteAllGameForUser(userId);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

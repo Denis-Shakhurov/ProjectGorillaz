@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public class GameRepository extends BaseRepository {
 
-    public static Long save(Game game) throws SQLException {
+    public Long save(Game game) throws SQLException {
         var sql = "INSERT INTO games (name, user_id, win, lose) VALUES (?, ?, ?, ?)";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -31,7 +31,7 @@ public class GameRepository extends BaseRepository {
         return game.getId();
     }
 
-    public static Optional<Game> findById(Long id) throws SQLException {
+    public Optional<Game> findById(Long id) throws SQLException {
         var sql = "SELECT * FROM games WHERE id = ?";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -54,7 +54,7 @@ public class GameRepository extends BaseRepository {
         return Optional.empty();
     }
 
-    public static void update(Game game) throws SQLException {
+    public void update(Game game) throws SQLException {
         var sql = "UPDATE games SET win = ?, lose = ? WHERE id = ?";
         try (var conn = dataSource.getConnection();
             var stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -65,7 +65,7 @@ public class GameRepository extends BaseRepository {
         }
     }
 
-    public static List<Game> getAllGameForUser(Long id) throws SQLException {
+    public List<Game> getAllGameForUser(Long id) throws SQLException {
         var sql = "SELECT name, user_id, SUM (win) AS count_win, SUM (lose) AS count_lose "
                 + "FROM games WHERE user_id = ? "
                 + "GROUP BY name, user_id";
@@ -92,7 +92,7 @@ public class GameRepository extends BaseRepository {
         }
     }
 
-    public static void deleteAllGameForUser(Long id) throws SQLException {
+    public void deleteAllGameForUser(Long id) throws SQLException {
         var sql = "DELETE FROM games WHERE user_id = ?";
         try (var conn = dataSource.getConnection();
             var stmt = conn.prepareStatement(sql)) {
@@ -101,7 +101,7 @@ public class GameRepository extends BaseRepository {
         }
     }
 
-    public static List<Map<String, Game>> getAllUserNameWithGames() throws SQLException {
+    public List<Map<String, Game>> getAllUserNameWithGames() throws SQLException {
         var sql = "SELECT u.name, g.name, g.user_id, SUM (g.win) AS count_win, SUM (g.lose) AS count_lose "
                 + "FROM games AS g "
                 + "INNER JOIN users AS u "

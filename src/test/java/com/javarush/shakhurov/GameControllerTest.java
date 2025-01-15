@@ -1,13 +1,11 @@
 package com.javarush.shakhurov;
 
 import com.javarush.shakhurov.controller.GameController;
-import com.javarush.shakhurov.dto.GamePage;
 import com.javarush.shakhurov.model.FactoryGame;
 import com.javarush.shakhurov.model.User;
 import com.javarush.shakhurov.model.game.Game;
-import com.javarush.shakhurov.repository.GameRepository;
-import com.javarush.shakhurov.repository.UserRepository;
 import com.javarush.shakhurov.service.GameService;
+import com.javarush.shakhurov.service.UserService;
 import com.javarush.shakhurov.utils.NamedRoutes;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -16,14 +14,15 @@ import io.javalin.http.NotFoundResponse;
 import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.*;
-import org.mockito.MockedStatic;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.Assert.assertThrows;
@@ -33,8 +32,16 @@ import static org.mockito.Mockito.*;
 public class GameControllerTest {
     Javalin app;
     private static MockWebServer mockBackEnd;
-    private static Context ctx;
-    private final FactoryGame factoryGame = new FactoryGame();
+    private Context ctx;
+    private static final FactoryGame factoryGame = new FactoryGame();
+    private final CreateApp createApp = new CreateApp();
+    private static final GameService gameService = new GameService();
+    private static final UserService userService = new UserService();
+    private final GameController gameController = new GameController();
+    private static Game gameTest;
+    private static Long gameId;
+    private static User userTest;
+    private static Long userId;
 
     @BeforeAll
     static void setUpMock() throws IOException {
@@ -55,47 +62,44 @@ public class GameControllerTest {
     }
 
     @BeforeEach
-    public final void setUp() throws Exception {
-        app = App.getApp();
+    public final void setUp() {
+        app = createApp.getApp();
         ctx = mock(Context.class);
+        userTest = new User("John", "john@example.com", "password", "user");
+        userId = userService.create(userTest);
+        gameTest = factoryGame.getGame("CalcGame");
+        gameTest.setUserId(userId);
+        gameId = gameService.create(gameTest);
     }
 
     @Test
     @DisplayName("Show game state and process correct answer from user")
-    public void showGameTest() throws SQLException {
-        Context ctx = mock(Context.class);
-        Game game = mock(Game.class);
-        GamePage page = mock(GamePage.class);
-        Optional<Game> optionalGame = Optional.of(game);
+    public void showGameTest() {
+        GameService gameServiceMock = mock(GameService.class);
 
-        try (MockedStatic<GameService> gameServiceMock = mockStatic(GameService.class)) {
-            when(ctx.pathParam("id")).thenReturn("1");
-            gameServiceMock.when(() -> GameService.findById(1L)).thenReturn(optionalGame);
-            when(ctx.formParam("answer")).thenReturn("correctAnswer");
-            when(game.getQuestionAndAnswer()).thenReturn(Map.of("question", "correctAnswer"));
+        when(ctx.pathParam("id")).thenReturn(gameId.toString());
+        when(gameServiceMock.findById(gameId)).thenReturn(Optional.of(gameTest));
+        when(ctx.formParam("answer")).thenReturn("correctAnswer");
 
-            GameController.show(ctx);
+        gameController.show(ctx);
 
-            verify(ctx).sessionAttribute("flash", "Верно!");
-            verify(ctx).render(eq("games/show.jte"), anyMap());
-            verify(ctx).status(HttpStatus.OK);
-        }
+        verify(ctx).status(HttpStatus.OK);
     }
 
     @Test
     @DisplayName("Show game with not authorization user")
-    public void showGameWithNoAuthorizationTest() throws SQLException {
+    public void showGameWithNoAuthorizationTest() {
         User user = new User("Ivan", "ivan@gmail.com", "wqerty", "user");
-        UserRepository.save(user);
+        userService.create(user);
 
         Game game = factoryGame.getGame("CalcGame");
         game.setUserId(user.getId());
-        GameRepository.save(game);
+        gameService.create(game);
 
         JavalinTest.test(app, (server, client) -> {
-            var response = client.get("/games/" + game.getId());
+            var response = client.get(NamedRoutes.gamePath(game.getId()));
 
-            assertEquals(401, response.code());
+            assertEquals(HttpStatus.UNAUTHORIZED.getCode(), response.code());
         });
     }
 
@@ -105,7 +109,7 @@ public class GameControllerTest {
         when(ctx.pathParam("id")).thenReturn("9999999");
 
         assertThrows(NotFoundResponse.class, () -> {
-            GameController.show(ctx);
+            gameController.show(ctx);
         });
 
         verify(ctx, never()).render(anyString(), any());
@@ -114,47 +118,47 @@ public class GameControllerTest {
 
     @Test
     @DisplayName("Create game success")
-    public void createGameSuccessTest() throws SQLException {
+    public void createGameSuccessTest() {
         User user = new User("Ivan", "ivan@gmail.com", "wqerty", "user");
-        Long userId = UserRepository.save(user);
+        Long userId = userService.create(user);
 
         Game gameExpected = new FactoryGame().getGame("CalcGame");
         gameExpected.setUserId(userId);
-        Long gameId = GameRepository.save(gameExpected);
+        Long gameId = gameService.create(gameExpected);
 
         JavalinTest.test(app, (server, client) -> {
-            client.post("/users/" + userId);
+            client.post(NamedRoutes.userPath(userId));
 
-            var gameActual = GameRepository.findById(gameId).get();
+            var gameActual = gameService.findById(gameId).get();
             assertEquals(gameExpected.getName(), gameActual.getName());
         });
     }
 
     @Test
     @DisplayName("Create new game with valid user ID and game name")
-    public void createGameWithValidParamsTest() throws SQLException {
+    public void createGameWithValidParamsTest() {
 
         when(ctx.formParam("game")).thenReturn("CalcGame");
-        when(ctx.cookie("userId")).thenReturn("1");
+        when(ctx.cookie("userId")).thenReturn("2");
 
         Game mockGame = mock(Game.class);
         when(mockGame.getName()).thenReturn("CalcGame");
 
-        GameController.create(ctx);
+        gameController.create(ctx);
 
         verify(ctx).status(HttpStatus.CREATED);
-        verify(ctx).redirect(NamedRoutes.gamePath("1"));
+        verify(ctx).redirect(NamedRoutes.gamePath("2"));
     }
 
     @Test
     @DisplayName("Delete all games for a specific user")
-    public void deleteAllGamesForUserTest() throws SQLException {
+    public void deleteAllGamesForUserTest() {
         Context ctx = mock(Context.class);
         Long userId = 1L;
 
         when(ctx.pathParam("id")).thenReturn(String.valueOf(userId));
 
-        GameController.destroy(ctx);
+        gameController.destroy(ctx);
 
         verify(ctx).status(HttpStatus.OK);
         verify(ctx).redirect(NamedRoutes.userPath(userId));

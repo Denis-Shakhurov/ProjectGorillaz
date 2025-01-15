@@ -2,6 +2,7 @@ package com.javarush.shakhurov;
 
 import com.javarush.shakhurov.utils.NamedRoutes;
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
 import io.javalin.testtools.JavalinTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AppTest {
     Javalin app;
     private static MockWebServer mockBackEnd;
+    private final CreateApp createApp = new CreateApp();
 
     @BeforeAll
     static void setUpMock() throws IOException {
@@ -27,7 +29,7 @@ public class AppTest {
         var html = Files.readString(Paths.get("src/test/resources/pageForTest.html"));
         var serverResponse = new MockResponse()
                 .addHeader("Content-Type", "text/html; charset=utf-8")
-                .setResponseCode(200)
+                .setResponseCode(HttpStatus.OK.getCode())
                 .setBody(html);
         mockBackEnd.enqueue(serverResponse);
         mockBackEnd.start();
@@ -40,25 +42,25 @@ public class AppTest {
 
     @BeforeEach
     public final void setUp() throws Exception {
-        app = App.getApp();
+        app = createApp.getApp();
     }
 
     @Test
-    public void startPageTest() {
+    public void startPageIT() {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get(NamedRoutes.startPath());
 
-            assertEquals(200, response.code());
+            assertEquals(HttpStatus.OK.getCode(), response.code());
             assertTrue(response.body().string().contains("QuestGame"));
         });
     }
 
     @Test
-    public void statisticPageTest() {
+    public void statisticPageIT() {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get(NamedRoutes.statisticPath());
 
-            assertEquals(200, response.code());
+            assertEquals(HttpStatus.OK.getCode(), response.code());
             assertTrue(response.body().string().contains("Статистика игр"));
         });
     }

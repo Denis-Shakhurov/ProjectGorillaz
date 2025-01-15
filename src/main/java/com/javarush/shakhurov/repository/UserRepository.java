@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public class UserRepository extends BaseRepository {
 
-    public static Long save(User user) throws SQLException {
+    public Long save(User user) throws SQLException {
         var sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -29,7 +29,7 @@ public class UserRepository extends BaseRepository {
         }
     }
 
-    public static List<User> getAll() throws SQLException {
+    public List<User> getAll() throws SQLException {
         var sql = "SELECT * FROM users";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -49,7 +49,7 @@ public class UserRepository extends BaseRepository {
         }
     }
 
-    public static Optional<User> findById(Long id) throws SQLException {
+    public Optional<User> findById(Long id) throws SQLException {
         var sql = "SELECT * FROM users WHERE id = ?";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -68,7 +68,7 @@ public class UserRepository extends BaseRepository {
         return Optional.empty();
     }
 
-    public static boolean existByEmail(String str) throws SQLException {
+    public boolean existByEmail(String str) throws SQLException {
         var sql = "SELECT * FROM users WHERE email = ?";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {
@@ -89,7 +89,7 @@ public class UserRepository extends BaseRepository {
         }
     }
 
-    public static Optional<User> findByEmail(String str) throws SQLException {
+    public Optional<User> findByEmail(String str) throws SQLException {
         var sql = "SELECT * FROM users WHERE email = ?";
         var user = new User();
         try (var conn = dataSource.getConnection();
@@ -112,7 +112,7 @@ public class UserRepository extends BaseRepository {
         return Optional.of(user);
     }
 
-    public static void delete(Long id) throws SQLException {
+    public void delete(Long id) throws SQLException {
         var sql = "DELETE FROM users WHERE id = ?";
         try (var conn = dataSource.getConnection();
              var stmt = conn.prepareStatement(sql)) {

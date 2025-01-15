@@ -9,7 +9,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class GameTest {
-    private FactoryGame factoryGame = new FactoryGame();
+    private final FactoryGame factoryGame = new FactoryGame();
 
     @Test
     public void createCalcGameTest() {
@@ -36,13 +36,8 @@ public class GameTest {
     public void createGameWithWrongNameTest() {
         String nameGame = "Game";
 
-        Throwable exception = assertThrows(
-                IllegalStateException.class,
-                () -> {
-                    Game game = factoryGame.getGame(nameGame);
-                }
-        );
+        Game game = factoryGame.getGame(nameGame);
 
-        assertEquals("Unexpected value: Game", exception.getMessage());
+        assertEquals(game, null);
     }
 }

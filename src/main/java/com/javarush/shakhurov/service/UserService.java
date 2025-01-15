@@ -8,50 +8,51 @@ import java.util.List;
 import java.util.Optional;
 
 public class UserService {
+    private final UserRepository userRepository = new UserRepository();
 
-    public static List<User> getAll() {
+    public List<User> getAll() {
         try {
-            return UserRepository.getAll();
+            return userRepository.getAll();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Optional<User> findById(Long id) {
+    public Optional<User> findById(Long id) {
         try {
-            return UserRepository.findById(id);
+            return userRepository.findById(id);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Optional<User> findByEmail(String email) {
+    public Optional<User> findByEmail(String email) {
         try {
-            return UserRepository.findByEmail(email);
+            return userRepository.findByEmail(email);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static boolean existByEmail(String email) {
+    public boolean existByEmail(String email) {
         try {
-            return UserRepository.existByEmail(email);
+            return userRepository.existByEmail(email);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Long create(User user) {
+    public Long create(User user) {
         try {
-            return UserRepository.save(user);
+            return userRepository.save(user);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void delete(Long id) {
+    public void delete(Long id) {
         try {
-            UserRepository.delete(id);
+            userRepository.delete(id);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

@@ -1,5 +1,4 @@
 @import com.javarush.shakhurov.dto.UserPage
-@import com.javarush.shakhurov.dto.StartPage
 @import com.javarush.shakhurov.utils.NamedRoutes
 @param UserPage page
 
@@ -19,7 +18,7 @@ content = @`
         <div class="row mb-5">
             <div class="col-md-8 col-xl-6 mx-auto">
                 <h1 class="col-md-8 col-xl-6 text-center mx-auto">QuestGame</h1>
-                <p>${StartPage.getTitle()}</p>
+                <p>${page.getTitle()}</p>
             </div>
         </div>
         <div class="row gy-4 row-cols-1 row-cols-md-2 row-cols-xl-3">

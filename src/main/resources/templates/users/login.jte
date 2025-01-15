@@ -1,6 +1,7 @@
 @import com.javarush.shakhurov.dto.BasePage
 @import com.javarush.shakhurov.utils.NamedRoutes
 @param BasePage page
+
 @template.layout.page(
 content = @`
     <main class="flax-grow-1">
