@@ -1,37 +1,47 @@
 package com.javarush.shakhurov.controller;
 
 import com.javarush.shakhurov.dto.BasePage;
-import com.javarush.shakhurov.dto.UserPage;
+import com.javarush.shakhurov.model.Order;
 import com.javarush.shakhurov.model.User;
+import com.javarush.shakhurov.service.OrderService;
+import com.javarush.shakhurov.service.UserService;
 import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
-public class StartController extends BaseController {
+public class StartController extends BaseController{
+    private final UserService userService;
+    private final OrderService orderService;
 
-    public void index(Context ctx) throws SQLException {
-        String userId = ctx.cookie(USER_ID);
-        var id = userId != null && !userId.equals("") ? Long.parseLong(userId) : null;
-        var user = id != null ? userService.findById(id).orElse(null) : null;
-        var page = new UserPage(user);
-
-        BasePage basePage = new BasePage();
-        basePage.setUserInfo(addUserInfo(user));
-
-        page.setFlash(ctx.consumeSessionAttribute(FLASH));
-
-        ctx.render("start.jte", model(PAGE, page));
+    public StartController(UserService userService, OrderService orderService) {
+        this.userService = userService;
+        this.orderService = orderService;
     }
 
-    private Map<String, String> addUserInfo(User user) {
-        return user == null ? new HashMap<>() : Map.of(
-                "id", String.valueOf(user.getId()),
-                "name", user.getName(),
-                "email", user.getEmail(),
-                "role", user.getRole());
+    public void index(Context ctx) {
+        BasePage basePage = new BasePage();
+
+        String userId = ctx.cookie(USER_ID);
+        Integer id = userId != null && !userId.equals("") ? Integer.parseInt(userId) : null;
+
+        List<Order> orders = new ArrayList<>();
+
+        if (id != null) {
+            userService.findById(id).ifPresent(user -> addUserInfoInBasePage(basePage, user));
+            orders.addAll(orderService.getAllByServicesByUserId(id));
+        }
+
+        List<User> masters = userService.getAllByRole("master");
+
+        basePage.setMasters(masters);
+        basePage.setFlash(ctx.consumeSessionAttribute(FLASH));
+        basePage.setOrders(orders);
+
+        ctx.status(HttpStatus.OK);
+        ctx.render("start.jte", model(PAGE, basePage));
     }
 }

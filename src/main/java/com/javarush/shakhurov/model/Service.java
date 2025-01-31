@@ -10,26 +10,24 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "users", schema = "service")
-public class User {
+@Table(name = "services", schema = "service")
+public class Service {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "first_name", length = 30, nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", length = 50, nullable = false)
-    private String lastName;
+    @Column(nullable = false)
+    private String name;
 
     @Column(nullable = false)
-    private String password;
+    private String description;
 
-    @Column(length = 100, nullable = false)
-    private String email;
+    @Column()
+    private Double price;
 
-    @Column(length = 30)
-    private String role;
+    @ManyToOne()
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @CreationTimestamp
     @Column(name = "create_date")

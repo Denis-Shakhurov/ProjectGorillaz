@@ -1,28 +1,17 @@
 package com.javarush.shakhurov.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+import com.javarush.shakhurov.model.Order;
+import com.javarush.shakhurov.model.Service;
 import com.javarush.shakhurov.model.User;
-import com.javarush.shakhurov.model.game.Game;
 
 import java.util.List;
 
+@Getter
+@Setter
 public class UserPage extends BasePage {
     private User user;
-    private List<Game> games;
-
-    public UserPage(User user, List<Game> games) {
-        this.user = user;
-        this.games = games;
-    }
-
-    public UserPage(User user) {
-        this.user = user;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public List<Game> getGames() {
-        return games;
-    }
+    private List<Service> services;
+    private List<Order> orders;
 }

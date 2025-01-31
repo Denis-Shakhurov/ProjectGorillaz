@@ -1,9 +1,9 @@
 package com.javarush.shakhurov.repository;
 
-import com.javarush.shakhurov.config.MyDataSource;
-import com.zaxxer.hikari.HikariDataSource;
+import com.javarush.shakhurov.config.MySessionFactory;
+import org.hibernate.SessionFactory;
 
 public class BaseRepository {
-    private final MyDataSource myDataSource = new MyDataSource();
-    protected HikariDataSource dataSource = myDataSource.getHikariDataSource();
+    private final MySessionFactory mySessionFactory = new MySessionFactory();
+    protected SessionFactory sessionFactory = mySessionFactory.getSessionFactory();
 }

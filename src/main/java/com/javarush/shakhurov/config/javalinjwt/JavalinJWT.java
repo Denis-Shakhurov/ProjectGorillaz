@@ -10,8 +10,6 @@ import java.util.Optional;
 public class JavalinJWT {
     private final static String CONTEXT_ATTRIBUTE = "jwt";
     private final static String COOKIE_KEY = "jwt";
-    private final JavalinJWT javalinJWT = new JavalinJWT();
-
 
     public boolean containsJWT(Context context) {
         return context.attribute(CONTEXT_ATTRIBUTE) != null;
@@ -55,12 +53,12 @@ public class JavalinJWT {
     public <T> Handler createHeaderDecodeHandler(JWTProvider<T> jwtProvider) {
         return context -> getTokenFromHeader(context)
                 .flatMap(jwtProvider::validateToken)
-                .ifPresent(jwt -> javalinJWT.addDecodedToContext(context, jwt));
+                .ifPresent(jwt -> addDecodedToContext(context, jwt));
     }
 
     public <T> Handler createCookieDecodeHandler(JWTProvider<T> jwtProvider) {
         return context -> getTokenFromCookie(context)
                 .flatMap(jwtProvider::validateToken)
-                .ifPresent(jwt -> javalinJWT.addDecodedToContext(context, jwt));
+                .ifPresent(jwt -> addDecodedToContext(context, jwt));
     }
 }

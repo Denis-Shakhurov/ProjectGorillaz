@@ -1,11 +1,23 @@
 @import com.javarush.shakhurov.dto.BasePage
-@import com.javarush.shakhurov.utils.NamedRoutes
 @param BasePage page
 
 @template.layout.page(
 content = @`
     <main class="flax-grow-1">
         <body>
+        <nav class="navbar navbar-dark navbar-expand-md bg-dark py-3">
+            <div class="container"><button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-6"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse flex-grow-0 order-md-first" id="navcol-6">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link active" href="${page.getStartPath()}">Главная</a></li>
+                    </ul>
+                </div>
+                <div class="d-none d-md-block">
+                    <a class="btn btn-light me-2" role="button" href="${page.getRegistrationPath()}">Регистрация</a>
+                    <a class="btn btn-light me-2" role="button" href="${page.getLoginUserPath()}">Войти</a>
+                </div>
+            </div>
+        </nav>
         @if( page.getFlash() != null)
             <div class="rounded-0 m-0 alert alert-dismissible fade show alert-warning" role="alert">
                 <p class="m-0">${page.getFlash()}</p>
@@ -26,18 +38,24 @@ content = @`
                                 <div class="bs-icon-xl bs-icon-circle bs-icon-primary bs-icon my-4"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-person">
                                         <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"></path>
                                     </svg></div>
-                                <form class="form-horizontal" action="${NamedRoutes.registrationPath()}" method="post">
+                                <form class="form-horizontal" action="${page.getRegistrationUserPath()}" method="post">
                                     <div class="form-group">
-                                    <label class="mb-3 control-label" for="name-input">Введи имя</label>
+                                        <label class="mb-3 control-label" for="name-input">Введи имя</label>
                                         <div class="mb-3">
-                                            <input class="form-control" id="name-input" type="text" name="name" placeholder="не менее 4 символов">
+                                            <input class="form-control" id="name-input" type="text" name="firstName" placeholder="не менее 4 символов">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="mb-3 control-label" for="name-input">Введи фамилию</label>
+                                        <div class="mb-3">
+                                            <input class="form-control" id="name-input" type="text" name="lastName" placeholder="не менее 4 символов">
                                         </div>
                                     </div>
                                     <div class="form-group">
                                         <label class="mb-3 control-label" for="name-input">Введи email</label>
-                                            <div class="mb-3">
-                                        <input class="form-control" type="email" name="email" placeholder="email" style="margin-bottom: 12px;">
-                                            </div>
+                                        <div class="mb-3">
+                                            <input class="form-control" type="email" name="email" placeholder="email" style="margin-bottom: 12px;">
+                                        </div>
                                     </div>
                                     <div class="form-group">
                                         <label class="mb-3 control-label" for="name-input">Введи пароль</label>

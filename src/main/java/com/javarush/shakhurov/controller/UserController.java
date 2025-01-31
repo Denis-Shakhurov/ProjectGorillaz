@@ -1,132 +1,193 @@
 package com.javarush.shakhurov.controller;
 
 import com.javarush.shakhurov.config.Provider;
+import com.javarush.shakhurov.dto.BasePage;
 import com.javarush.shakhurov.dto.UserPage;
 import com.javarush.shakhurov.dto.UsersPage;
+import com.javarush.shakhurov.model.Order;
 import com.javarush.shakhurov.model.User;
-import com.javarush.shakhurov.utils.NamedRoutes;
+import com.javarush.shakhurov.service.OrderService;
+import com.javarush.shakhurov.service.UserService;
 import com.lambdaworks.crypto.SCryptUtil;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.NotFoundResponse;
-import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.InternetAddress;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
-public class UserController extends BaseController{
-    private final Provider provider = new Provider();
+    public class UserController extends BaseController {
+        private final Provider provider;
+        private final UserService userService;
+        private final OrderService orderService;
+
+    public UserController(UserService userService, OrderService orderService, Provider provider) {
+        this.userService = userService;
+        this.orderService = orderService;
+        this.provider = provider;
+    }
 
     public void index(Context ctx) {
-        var users = userService.getAll();
-        var page = new UsersPage(users);
+        List<User> users = userService.getAll();
+        UsersPage usersPage = new UsersPage(users);
+
         ctx.status(HttpStatus.OK);
-        ctx.render("users/index.jte", model(PAGE, page));
+        ctx.render("users/index.jte", model(PAGE, usersPage));
+     }
+
+     public void indexEdit(Context ctx) {
+         int id = Integer.parseInt(Objects.requireNonNull(ctx.cookie(USER_ID)));
+
+        BasePage basePage = new BasePage();
+
+        userService.findById(id).ifPresent(user -> addUserInfoInBasePage(basePage, user));
+        basePage.setFlash(ctx.consumeSessionAttribute(FLASH));
+
+        ctx.status(HttpStatus.OK);
+        ctx.render("users/edit.jte", model(PAGE, basePage));
+    }
+
+    public void indexLogin(Context ctx) {
+        BasePage basePage = new BasePage();
+
+        basePage.setFlash(ctx.consumeSessionAttribute(FLASH));
+        ctx.status(HttpStatus.OK);
+        ctx.render("users/login.jte", model(PAGE, basePage));
     }
 
     public void show(Context ctx) {
-        var id = Long.parseLong(ctx.pathParam("id"));
-        var user = userService.findById(id)
-                .orElseThrow(() -> new NotFoundResponse("User with id = " + id + " not found"));
-        var games = gameService.getAllGameForUser(id);
-        var page = new UserPage(user, games);
-        page.setFlash(ctx.consumeSessionAttribute(FLASH));
+        int id = Integer.parseInt(Objects.requireNonNull(ctx.cookie(USER_ID)));
+
+        User user = userService.findById(id)
+                .orElseThrow(() -> new NotFoundResponse("User with id " + id + " not found"));
+        UserPage userPage = new UserPage();
+        List<Order> orders = new ArrayList<>();
+
+        if (user.getRole().equals("user")) {
+            orders.addAll(orderService.findAllByUserId(id));
+            userPage.setOrders(orders);
+        } else {
+            orders.addAll(orderService.getAllByServicesByUserId(id));
+            userPage.setOrders(orders);
+        }
+
+        userPage.setUser(user);
+        addUserInfoInBasePage(userPage, user);
+        userPage.setFlash(ctx.consumeSessionAttribute(FLASH));
+
         ctx.status(HttpStatus.OK);
-        ctx.render("users/show.jte", model(PAGE, page));
+        ctx.render("users/show.jte", model(PAGE, userPage));
     }
 
-    public void create(Context ctx) {
-        var name = ctx.formParam("name");
-        var email = ctx.formParam("email");
-        var password = ctx.formParam("password");
-        var role = ctx.formParam("role") == null ? "user" : ctx.formParam("role");
+    public void create(Context ctx, String role) {
+        User user = new User();
 
-        if (isValidName(name)
-                && isValidEmail(email)
-                && isValidPassword(password)
-                && userService.existByEmail(email)) {
-            var passwordHash = SCryptUtil.scrypt(password, 2, 2, 2);
-            var user = new User(name, email, passwordHash, role);
-            var id = userService.create(user);
+        getFormParamAndSetUser(ctx, user);
+        user.setRole(role);
 
-            setTokenForCookie(ctx, user, provider);
+        if (!userService.existsByEmail(user.getEmail())) {
+            int id = userService.save(user).getId();
+
             ctx.cookie(USER_ID, String.valueOf(id));
+            addTokenInCookie(ctx, user, provider);
 
-            ctx.sessionAttribute(FLASH, "Игрок создан");
             ctx.status(HttpStatus.CREATED);
-            ctx.redirect(NamedRoutes.startPath());
-        } else if (!userService.existByEmail(email)) {
-            ctx.sessionAttribute(FLASH, "Игрок с таким " + email + " уже существует");
-            ctx.status(HttpStatus.BAD_REQUEST);
-            ctx.redirect(NamedRoutes.registrationPath());
+            ctx.redirect(namedRoutes.getUserPath(id));
         } else {
-            ctx.sessionAttribute(FLASH, "Неккоректные данные");
+            ctx.sessionAttribute(FLASH, "Пользователь с " + user.getEmail() + " уже зарегистрирован");
             ctx.status(HttpStatus.BAD_REQUEST);
-            ctx.redirect(NamedRoutes.registrationPath());
+            ctx.redirect(namedRoutes.getRegistrationPath());
+        }
+    }
+
+    public void update(Context ctx) {
+        int id = Integer.parseInt(Objects.requireNonNull(ctx.cookie(USER_ID)));
+        User user = userService.findById(id)
+                .orElseThrow(() -> new NotFoundResponse("User with id " + id + " not found"));
+
+        getFormParamAndSetUser(ctx, user);
+
+        if (ctx.formParam("email").equals("")) {
+            User updatedUser = userService.update(user);
+
+            ctx.cookie(USER_ID, String.valueOf(id));
+            addTokenInCookie(ctx, updatedUser, provider);
+
+            ctx.sessionAttribute(FLASH, "Изменения сохранены");
+            ctx.status(HttpStatus.OK);
+            ctx.redirect(namedRoutes.getUserPath(id));
+        } else if (!userService.existsByEmail(user.getEmail())) {
+            User updatedUser = userService.update(user);
+
+            ctx.cookie(USER_ID, String.valueOf(id));
+            addTokenInCookie(ctx, updatedUser, provider);
+
+            ctx.sessionAttribute(FLASH, "Изменения сохранены");
+            ctx.status(HttpStatus.OK);
+            ctx.redirect(namedRoutes.getUserPath(id));
+        } else {
+            ctx.sessionAttribute(FLASH, "Пользователь с " + user.getEmail() + " уже зарегистрирован");
+            ctx.status(HttpStatus.BAD_REQUEST);
+            ctx.redirect(namedRoutes.getEditUserPath(id));
         }
     }
 
     public void login(Context ctx) {
-        try {
-            var email = ctx.formParam("email");
-            var password = ctx.formParam("password");
-            var user = userService.findByEmail(email)
-                    .orElseThrow(() -> new NotFoundResponse("User with email = " + email + " not found"));
-            if (user.getPassword() != null && SCryptUtil.check(password, user.getPassword())) {
+        String email = ctx.formParam("email");
+        String password = ctx.formParam("password");
 
-                setTokenForCookie(ctx, user, provider);
-                ctx.cookie(USER_ID, String.valueOf(user.getId()));
+        User user = userService.findByEmail(email).orElse(null);
+        String hashedPassword = user != null ? user.getPassword() : null;
 
-                ctx.sessionAttribute(FLASH, "Привет " + user.getName() + " !");
-                ctx.status(HttpStatus.OK);
-                ctx.redirect(NamedRoutes.startPath());
-            } else if (user.getEmail() == null) {
-                ctx.sessionAttribute(FLASH, "Игрок с email - \"" + ctx.formParam("email") + "\" не существует");
-                ctx.status(HttpStatus.BAD_REQUEST);
-                ctx.redirect(NamedRoutes.loginPath());
-            } else {
-                ctx.status(HttpStatus.BAD_REQUEST);
-                ctx.sessionAttribute(FLASH, "Некорректные логин или пароль");
-                ctx.redirect(NamedRoutes.loginPath());
-            }
-        } catch (NotFoundResponse e) {
+        if (user != null && SCryptUtil.check(password, hashedPassword)) {
+            ctx.cookie(USER_ID, String.valueOf(user.getId()));
+            addTokenInCookie(ctx, user, provider);
+
+            ctx.sessionAttribute(FLASH, "Привет " + user.getFirstName() + "!");
+            ctx.status(HttpStatus.OK);
+            ctx.redirect(namedRoutes.getUserPath(user.getId()));
+        } else if (user != null && !SCryptUtil.check(password, hashedPassword)) {
+            ctx.sessionAttribute(FLASH, "Не верный пароль");
             ctx.status(HttpStatus.BAD_REQUEST);
-            ctx.redirect(NamedRoutes.loginPath());
+            ctx.redirect(namedRoutes.getLoginUserPath());
+        } else if (user == null) {
+            ctx.status(HttpStatus.BAD_REQUEST);
+            ctx.sessionAttribute(FLASH, "Не верный email");
+            ctx.redirect(namedRoutes.getLoginUserPath());
         }
     }
 
     public void logout(Context ctx) {
         ctx.sessionAttribute(FLASH, null);
-        ctx.cookie(JWT, "");
         ctx.cookie(USER_ID, "");
-        ctx.redirect(NamedRoutes.startPath());
-    }
-
-    public void destroy(Context ctx) {
-        var id = Long.parseLong(Objects.requireNonNull(ctx.formParam(ID)));
-        gameService.destroy(id);
-        userService.delete(id);
+        ctx.cookie(JWT, "");
         ctx.status(HttpStatus.OK);
-        ctx.redirect(NamedRoutes.usersPath());
+        ctx.redirect(namedRoutes.getStartPath());
     }
 
-    private boolean isValidName(String name) {
-        return name != null && name.matches("(\\w+|[а-яА-Я0-9]+)") && name.length() >= 4;
-    }
+    private void getFormParamAndSetUser(Context ctx, User user) {
+        String firstName = ctx.formParam("firstName").equals("")
+                ? user.getFirstName()
+                : ctx.formParam("firstName");
+        String lastName = ctx.formParam("lastName").equals("")
+                ? user.getLastName()
+                : ctx.formParam("lastName");
+        String email = ctx.formParam("email").equals("")
+                ? user.getEmail()
+                : ctx.formParam("email");
+        String password = ctx.formParam("password").equals("")
+                ? user.getPassword()
+                : ctx.formParam("password");
+        String role = user.getRole();
 
-    private boolean isValidEmail(String email) {
-        try {
-            InternetAddress emailAddress = new InternetAddress(email);
-            emailAddress.validate();
-            return true;
-        } catch (AddressException e) {
-            throw new RuntimeException(e);
-        }
-    }
+        String hashedPassword = SCryptUtil.scrypt(password, 2, 2, 2);
 
-    private boolean isValidPassword(String password) {
-        return password != null && password.length() > 5;
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setPassword(hashedPassword);
+        user.setRole(role);
     }
 }

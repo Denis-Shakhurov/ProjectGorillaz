@@ -2,8 +2,9 @@ package com.javarush.shakhurov.model;
 
 import io.javalin.security.RouteRole;
 
-public enum Roles implements RouteRole {
+public enum Role implements RouteRole {
     ADMIN,
-    GUEST,
-    USER
+    USER,
+    MASTER,
+    GUEST
 }
